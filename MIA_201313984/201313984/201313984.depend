@@ -1,0 +1,10 @@
+# depslib dependency file v1.0
+1470533838 source:/home/chelo/Escritorio/git MIA_201313984/-MIA-201313984/MIA_201313984/201313984/main.c
+	<stdio.h>
+	<stdlib.h>
+	<stdio.h>
+	<stdlib.h>
+	<sys/stat.h>
+	<string.h>
+	<time.h>
+
