@@ -2067,9 +2067,257 @@ int metodoFdisk(char *token)
 
 int metodoMount(char *token)
 {
-    printf("Entro a mount.\n");
+    char path[10] = "-path";
+    char name[10] = "-name";
+    char comillas[3] = "\"";
+
+    char guadoPath1[100];
+    char guardoNombre[100];
+    int control;
+
+    while(token!=NULL)
+    {
+        token = strtok(NULL, " :");
+        if(token==NULL)
+            break;
+
+        char *estaPath;
+        char *estaName;
+
+        estaPath = strstr(token,path);
+        estaName = strstr(token,name);
+
+        if(estaPath)
+            control = 1;
+        else if(estaName)
+            control = 2;
+        else
+            control = 0;
+
+        switch (control){
+        case 1:
+            token = strtok(NULL, " :");
+            if(strstr(token,comillas)){
+                strcpy(guadoPath1,token+1);
+                token = strtok(NULL, "\"");
+                strcat(guadoPath1," ");
+                strcat(guadoPath1,token);
+            }else{
+                strcpy(guadoPath1,token);
+            }
+            break;
+        case 2:
+            token = strtok(NULL, " :");
+            strcpy(guardoNombre,token);
+            break;
+        default:
+            printf("\nError, comando no valido.\n");
+            break;
+        }
+    }
+
+    FILE *archivo = fopen(guadoPath1,"r+b");
+    mbr *compro = (mbr *)malloc(sizeof(mbr));
+
+
+    if(archivo!=NULL){
+        fseek(archivo,0,SEEK_SET);
+        fread(compro,sizeof(mbr),1,archivo);
+        fclose(archivo);
+
+        if(strcmp(compro->mbr_partition1->part_name,guardoNombre) == 0){
+            agregarATabla(tablaDeParticiones,guadoPath1,guardoNombre);
+        }else if(strcmp(compro->mbr_partition2->part_name,guardoNombre) == 0){
+            agregarATabla(tablaDeParticiones,guadoPath1,guardoNombre);
+        }else if(strcmp(compro->mbr_partition3->part_name,guardoNombre) == 0){
+            agregarATabla(tablaDeParticiones,guadoPath1,guardoNombre);
+        }else if(strcmp(compro->mbr_partition4->part_name,guardoNombre) == 0){
+            agregarATabla(tablaDeParticiones,guadoPath1,guardoNombre);
+        }else{
+            /*MONTAR LOGICAS*/
+            if(strcmp(guardoNombre,"px") == 0)
+                printf("\nNo se monto particion\n");
+            mbr *mbrLeidoA = (mbr *)malloc(sizeof(mbr));
+            FILE *barchivo1A = fopen(guadoPath1,"r+b");
+            ebr *ebrInicial2A = (ebr *)malloc(sizeof(ebr));
+            fseek(barchivo1A,0,SEEK_SET);
+            fread(mbrLeidoA,sizeof(mbr),1,barchivo1A);
+            fseek(barchivo1A,sizeof(mbr)+ sizeof( partition),SEEK_CUR);
+            fread(ebrInicial2A,sizeof(ebr),1,barchivo1A);
+            int tam = 1;
+
+            if(ebrInicial2A->part_size != 0 && ebrInicial2A->part_start != 0){
+                for(int i = 0; i <= 1000; i++){
+
+                        fseek(barchivo1A,0,SEEK_SET);
+                        fread(mbrLeidoA,sizeof(mbr),1,barchivo1A);
+                        fseek(barchivo1A,sizeof(mbr)+ sizeof( partition) + (i)*sizeof(ebr),SEEK_CUR);
+                        fread(ebrInicial2A,sizeof(ebr),1,barchivo1A);
+                        if(ebrInicial2A->part_size == 0 && ebrInicial2A->part_start == 0)
+                            break;
+                        if(strcmp(ebrInicial2A->part_name,guardoNombre) == 0){
+                             agregarATabla(tablaDeParticiones,guadoPath1,guardoNombre);
+                            break;
+                        }
+                }
+
+            }else{
+                printf("\nError, no existe esa particion en el disco.\n");
+            }
+
+        }
+
+    }else{
+        printf("\nError, disco no existe\n");
+        printf("\nNo se monto la particion\n");
+    }
+
 
 }
+
+char *aa = "";
+int metodoUnmount(char *token)
+{
+    char id[10] = "-id";
+
+    char guardoId[100];
+    int control;
+
+    while(token!=NULL)
+    {
+        token = strtok(NULL, " :");
+        if(token==NULL)
+            break;
+
+        char *estaId;
+
+        estaId = strstr(token,id);
+
+        if(estaId)
+            control = 1;
+        else
+            control = 0;
+
+        switch (control){
+        case 1:
+            token = strtok(NULL, "=");
+            strcpy(guardoId,token);
+            break;
+        default:
+            printf("\nError, comando no valido.\n");
+            return -1;
+            break;
+        }
+    }
+
+    registro *aux = (registro *)malloc(sizeof(registro));
+    registro *aux2 = (registro *)malloc(sizeof(registro));
+    aux = tablaDeParticiones->primero;
+
+    if(aux == NULL){
+        printf("\nError, no existe ID en tabla de particiones\n");
+        return -1;
+    }
+    while(aux != NULL){
+
+        if(strcmp(aux->id,guardoId) == 0){
+
+            mbr *mbrLeidoA = (mbr *)malloc(sizeof(mbr));
+            FILE *barchivo1A = fopen(aux->path,"r+b");
+            ebr *ebrInicial2A = (ebr *)malloc(sizeof(ebr));
+            fseek(barchivo1A,0,SEEK_SET);
+            fread(mbrLeidoA,sizeof(mbr),1,barchivo1A);
+            fseek(barchivo1A,sizeof(mbr)+ sizeof( partition),SEEK_CUR);
+            fread(ebrInicial2A,sizeof(ebr),1,barchivo1A);
+            int siEsExtendida;
+            if(strcmp(mbrLeidoA->mbr_partition1->part_type,"e") == 0 && strcmp(aux->name,mbrLeidoA->mbr_partition1->part_name)==0){
+                siEsExtendida = 1 ;
+            }else if(strcmp(mbrLeidoA->mbr_partition2->part_type,"e") == 0 && strcmp(aux->name,mbrLeidoA->mbr_partition2->part_name)==0){
+                siEsExtendida = 1 ;
+            }else if(strcmp(mbrLeidoA->mbr_partition3->part_type,"e") == 0 && strcmp(aux->name,mbrLeidoA->mbr_partition3->part_name)==0){
+                siEsExtendida = 1 ;
+            }else if(strcmp(mbrLeidoA->mbr_partition4->part_type,"e") == 0 && strcmp(aux->name,mbrLeidoA->mbr_partition4->part_name)==0){
+                siEsExtendida = 1 ;
+            }
+            if(siEsExtendida == 1){
+                if(ebrInicial2A->part_size != 0 && ebrInicial2A->part_start != 0){
+                    for(int i = 1; i <= 1000; i++){
+
+                        registro *recorre = (registro *)malloc(sizeof(registro));
+                        recorre = tablaDeParticiones->primero;
+
+                        while(recorre!=NULL){
+
+                            if(strcmp(recorre->name,ebrInicial2A->part_name) == 0){
+                                metodoUnmount2(recorre->id);
+                                printf("\nSi esta en la tabla la logica que contiene la extendida\n");
+                                printf(recorre->name);
+                            }
+
+                            recorre = recorre->siguiente;
+                        }
+                            fseek(barchivo1A,0,SEEK_SET);
+                            fread(mbrLeidoA,sizeof(mbr),1,barchivo1A);
+                            fseek(barchivo1A,sizeof(mbr)+ sizeof( partition) + (i)*sizeof(ebr),SEEK_CUR);
+                            fread(ebrInicial2A,sizeof(ebr),1,barchivo1A);
+                            if(ebrInicial2A->part_size == 0 && ebrInicial2A->part_start == 0)
+                                break;
+
+                    }
+                }
+            }
+
+    }
+aux = aux->siguiente;
+    }
+
+        aux = tablaDeParticiones->primero;
+        if(aux == NULL){
+            printf("\nError, no existe en tabla de particiones\n");
+            return -1;
+        }
+
+    while(aux!=NULL){
+
+        if(strcmp(aux->id,guardoId) == 0){
+
+            if(aux == tablaDeParticiones->primero && aux == tablaDeParticiones->ultimo){
+
+                /*desmontar logicas*/
+                tablaDeParticiones->primero = NULL;
+                tablaDeParticiones->ultimo = NULL;
+                return 1;
+            }else if(aux == tablaDeParticiones->ultimo){
+                aux2 = aux->anterior;
+                aux2->siguiente = NULL;
+                tablaDeParticiones->ultimo = aux2;
+                return 1;
+            }else if(aux == tablaDeParticiones->primero && aux->siguiente != NULL){
+                aux = aux->siguiente;
+                aux->anterior = NULL;
+                tablaDeParticiones->primero = aux;
+                return 1;
+            }else{
+                registro *aux3 = (registro *)malloc(sizeof(registro));
+                aux3 = aux->anterior;
+                aux3->siguiente = aux->siguiente;
+                registro *aux4 = (registro *)malloc(sizeof(registro));
+                aux4 = aux->siguiente;
+                aux4->anterior = aux->anterior;
+                return 1;
+            }
+        }
+
+        if(strcmp(aux->id,guardoId) != 0 && aux == tablaDeParticiones->ultimo){
+            printf("\nError, no existe ID en tabla de particiones\n");
+        }
+
+
+        aux = aux->siguiente;
+    }
+
+}
+
 
 int metodoUnmount(char *token)
 {
