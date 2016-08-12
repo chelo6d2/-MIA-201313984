@@ -1,0 +1,6 @@
+digraph html { abc [shape=none, margin=0, label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+<TR>
+<TD ROWSPAN="3"><FONT COLOR="red">MBR</FONT><BR/></TD>
+<TD ROWSPAN="3">PRIMARIA</TD>
+<TD COLSPAN="2">EXTENDIDA</TD>
+</TR><TR><TD>EBR</TD><TD>Vacio</TD></TR></TABLE>>];}
