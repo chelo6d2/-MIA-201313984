@@ -265,9 +265,9 @@ int  metodoMkdisk(char *token)
 
     int TamanioDeDisco;
     char unitLetra[5] = "m";
-    char direccionPath[200];
-    char direccionPath2[200];
-    char direccionPath3[200];
+    char direccionPath[200]="";
+    char direccionPath2[200]="";
+    char direccionPath3[200]="";
     char direccionPath4[200]="";
     char nombredeldisco[20]="";
     char pruebanombre[20];
@@ -487,6 +487,175 @@ int  metodoMkdisk(char *token)
 
     return 1;
 }
+
+int  metodoMkdisk2(char *token)
+{
+    char size[100] = "-size";
+    char unit[100] = "+unit";
+    char path[200] = "-path";
+    char comillas[2] = "\"";
+    int control;
+
+    int TamanioDeDisco;
+    char unitLetra[5] = "m";
+    char direccionPath[200];
+    char direccionPath2[200];
+    char direccionPath3[200];
+
+
+    while( token != NULL )
+       {
+          token = strtok(NULL, " ::");
+          if(token==NULL)
+              break;
+
+
+          char *estaSize;
+          char *estaUnit;
+          char *estaPath;
+
+          estaSize = strstr(token,size);
+          estaUnit = strstr(token,unit);
+          estaPath = strstr(token,path);
+
+          if(estaSize){
+              control = 1;
+          }else if(estaUnit){
+              control = 2;
+          }else if(estaPath){
+              control = 3;
+          }else{
+              control = 0;
+          }
+
+          switch (control) {
+          case 1:
+              token = strtok(NULL, " ::");
+              TamanioDeDisco = atoi(token);
+
+              if(TamanioDeDisco > 0){
+              }
+              else{
+                  printf("\nERROR. Tamaño de disco no valido. Debe ser mayor a 0.\n");
+                  return -1;
+              }
+              break;
+          case 2:
+              token = strtok(NULL, " ::");
+              strcpy(unitLetra,token);
+              if((strcmp(unitLetra,"m") == 0) || (strcmp(unitLetra,"k") == 0)){
+
+              }
+              else{
+                  printf("\nERROR. Unidad no valida. Debe ser k o m\n");
+                  return -1;
+              }
+
+              break;
+          case 3:
+
+              token = strtok(NULL, " ::");
+
+              if(strstr(token,comillas)){
+                  strcpy(direccionPath,token+1);
+                  token = strtok(NULL, "\"");
+                  strcat(direccionPath," ");
+                  strcat(direccionPath,token);
+                  strcpy(direccionPath2,direccionPath);
+                  strcpy(direccionPath3,direccionPath);
+              }else{
+                  strcpy(direccionPath,token);
+                  strcpy(direccionPath2,token);
+                  strcpy(direccionPath3,token);
+              }
+              break;
+          default:
+              printf("\nERROR. Parametro no valido\n");
+              return -1;
+              break;
+          }
+}
+
+    /*CREAR EL PATH*/
+    int numPalabras = 1;
+    char *tem;
+    tem = strtok(direccionPath,"/");
+    while(tem!=NULL)
+    {
+        tem = strtok(NULL,"/");
+        if(tem==NULL)
+            break;
+        numPalabras++;
+    }
+
+    char pathReal[200] = "/";
+    char *temm;
+    temm = strtok(direccionPath2,"/");
+    strcat(pathReal,temm);
+    strcat(pathReal,"/");
+    while(numPalabras > 2)
+    {
+        temm = strtok(NULL,"/");
+        strcat(pathReal,temm);
+        strcat(pathReal,"/");
+        mkdir(pathReal ,S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+        numPalabras--;
+    }
+
+    temm = strtok(NULL,"/");
+
+    mbr *mbr1 = (mbr *)malloc(sizeof(mbr));
+    FILE *archivo = fopen(direccionPath3,"wb");
+    time_t tiempo = time(0);
+            struct tm *tlocal = localtime(&tiempo);
+            char output[128];
+            strftime(output,128,"%d/%m/%y %H:%M:%S",tlocal);
+    strcpy(mbr1->mbr_fecha_creacion,output);
+    int random = rand();
+    mbr1->mbr_disk_signature = random;
+    mbr1->mbr_partition1 = (partition *)malloc(sizeof(partition));
+    mbr1->mbr_partition2 = (partition *)malloc(sizeof(partition));
+    mbr1->mbr_partition3 = (partition *)malloc(sizeof(partition));
+    mbr1->mbr_partition4 = (partition *)malloc(sizeof(partition));
+    strcpy(mbr1->mbr_partition1->part_type,"x");
+    strcpy(mbr1->mbr_partition2->part_type,"x");
+    strcpy(mbr1->mbr_partition3->part_type,"x");
+    strcpy(mbr1->mbr_partition4->part_type,"x");
+    mbr1->mbr_partition1->part_size = 0;
+    mbr1->mbr_partition2->part_size = 0;
+    mbr1->mbr_partition3->part_size = 0;
+    mbr1->mbr_partition4->part_size = 0;
+
+    if(strcmp(unitLetra,"k") == 0)
+    {
+        mbr1->mbr_tamanio = TamanioDeDisco*1024;
+        fwrite(mbr1,sizeof(mbr),1,archivo);
+        for(int i = 0; i < (500*TamanioDeDisco); i++)
+            fputs("\\0",archivo);
+
+
+    }else if(strcmp(unitLetra,"m") == 0)
+    {
+        mbr1->mbr_tamanio = TamanioDeDisco*1024*1024;
+        fwrite(mbr1,sizeof(mbr),1,archivo);
+        for(int i = 0; i < 2*(500*TamanioDeDisco*500); i++)
+            fputs("\\0",archivo);
+
+    }
+
+    fclose(archivo);
+
+    mbr *mbrLeido = (mbr *)malloc(sizeof(mbr));
+    FILE *barchivo1 = fopen(direccionPath3,"rb");
+    fread(mbrLeido,sizeof(mbr),1,barchivo1);
+    int t = sizeof(mbrLeido);
+    fclose(barchivo1);
+    printf("\n**Disco creado exitosamente**");
+
+
+    return 1;
+}
+
 
 int metodoRmdisk(char *token)
 {
@@ -2997,21 +3166,44 @@ int metodoRep(char *token)
                 }
 
 
+                //Generar pdf del MBR
+                /*
+                 *       system("dot -Tpng GraficaSupermercado.dot -o GraficaSupermercado.png ");
+                         system("gnome-open GraficaSupermercado.dot &");
+                         system("gnome-open GraficaSupermercado.png &");
 
+                 * */
                 if(strstr(guadoPath1,"jpg")){
                     FILE *dotMBR1 = fopen("archivosMBR.dot","a");
                     fprintf(dotMBR1,"%s","}");
                     fclose(dotMBR1);
-                    char ja[50] = "dot -Tjpg archivosMBR.dot -o ";
+                    char prueba[100];
+                    strcpy(prueba,guadoPath1);
+                    char ja[100] = "dot -Tjpg archivosMBR.dot -o ";
+                    char ja2[100] = "gnome-open ";
+                    char ja3[100] = " &";
                     strcat(ja,guadoPath1);
+                    strcat(ja2,prueba);
+                    strcat(ja2, ja3);
+                    printf("\n");
                     system(ja);
+                    system(ja2);
                 }else if(strstr(guadoPath1,"pdf")){
                     FILE *dotMBR1 = fopen("archivosMBR.dot","a");
                     fprintf(dotMBR1,"%s","}");
                     fclose(dotMBR1);
-                    char ja[50] = "dot -Tpdf archivosMBR.dot -o ";
+                    char prueba[100];
+                    strcpy(prueba,guadoPath1);
+                    char ja[100] = "dot -Tpdf archivosMBR.dot -o ";
+                    char ja2[100] = "gnome-open ";
+                    char ja3[100] = " &";
                     strcat(ja,guadoPath1);
+                    strcat(ja2,prueba);
+                    strcat(ja2, ja3);
+                    printf("\n");
+                    printf("%sja2: ",ja2);
                     system(ja);
+                    system(ja2);
                 }
 
 
@@ -3352,18 +3544,55 @@ int metodoRep(char *token)
                 fprintf(dotMBR,"%s","</TABLE>>];}");
                 fclose(dotMBR);
 
+                /*
+                 * FILE *dotMBR1 = fopen("archivosMBR.dot","a");
+                    fprintf(dotMBR1,"%s","}");
+                    fclose(dotMBR1);
+                    char prueba[50];
+                    strcpy(prueba,guadoPath1);
+                    char ja[50] = "dot -Tpdf archivosMBR.dot -o ";
+                    char ja2[100] = "gnome-open ";
+                    strcat(ja,guadoPath1);
+                    strcat(ja2,prueba);
+                    strcat(ja2, ja3);
+                    printf("\n");
+                    printf("%sja2: ",ja2);
+                    system(ja);
+                    system(ja2);
+                 *
+                 * */
+
+
                 if(strstr(guadoPath1,"jpg")){
                     FILE *dotMBR1 = fopen("archivosDISK.dot","a");
                     fclose(dotMBR1);
-                    char ja[50] = "dot -Tjpg archivosDISK.dot -o ";
+                    char prueba[100];
+                    strcpy(prueba,guadoPath1);
+                    char ja[100] = "dot -Tjpg archivosDISK.dot -o ";
+                    char ja2[100] = "gnome-open ";
+                    char ja3[100] = " &";
                     strcat(ja,guadoPath1);
+                    strcat(ja2,prueba);
+                    strcat(ja2, ja3);
+                    printf("\n");
                     system(ja);
+                    system(ja2);
+
                 }else if(strstr(guadoPath1,"pdf")){
                     FILE *dotMBR1 = fopen("archivosDISK.dot","a");
                     fclose(dotMBR1);
-                    char ja[50] = "dot -Tpdf archivosDISK.dot -o ";
+                    char prueba[100];
+                    strcpy(prueba,guadoPath1);
+                    char ja[100] = "dot -Tpdf archivosDISK.dot -o ";
+                    char ja2[100] = "gnome-open ";
+                    char ja3[100] = " &";
                     strcat(ja,guadoPath1);
+                    strcat(ja2,prueba);
+                    strcat(ja2, ja3);
+                    printf("\n");
                     system(ja);
+                    system(ja2);
+
                 }
             }else{
                 printf("\nERROR. Definir mbr o disk.\n");
@@ -4812,7 +5041,7 @@ int agregarATabla(tabla *t, char path [100],char nombre[100]){
                 printf("\n**Se monto particion con exito**.\n");
               // imprimirMount(tablaDeParticionese);
               //  imprimirMount2(tablaDeParticiones);
-                printCola(tablaDeParticiones);
+                //printCola(tablaDeParticiones);
             }
         }
     }
@@ -4867,9 +5096,6 @@ void printCola(tabla *q){
         aux=aux->siguiente;
     }
 }
-
-
-
 
 
 
