@@ -5,6 +5,9 @@
 #include <time.h>
 #define TRUE 1
 
+//ultimo
+
+
 
 typedef struct{
     int part_status;
@@ -120,7 +123,7 @@ void main(int argc, char *argv[])
     char rmdisk[10] = "rmdisk";
     char fdisk[10] = "fdisk";
     char mount[10] = "mount";
-    char unmount[10] = "unmount";
+    char unmount[10] = "umount";
     char rep[10] = "rep";
     char exec[10] = "exec";
     if(strcmp(mkdisk,token) == 0)
